@@ -53,7 +53,7 @@ You can choose to play against another person using only human moves. Alternativ
 
 ## Human Move
 
-If you dont have any dice to hand you can run roll_dice.py to make a randomly rolled dice.
+If you dont have any dice to hand you can roll some virtual dice:
 
 ```
 python roll_dice.py
@@ -127,9 +127,37 @@ This would give me the board:
 
 There is no contraint on the number of pieces I can move in 1 turn.
 
+## Moving a piece which has been taken.
+
+To move a piece which is on the bar after being taken we denote the source to be *bar*.
+
+### Example
+
+Say if you are player X and had 2 pieces on the bar and had rolled a 1 4:
+
+```
+python play.py -human bar 23 bar 20
+```
+
+## Moving a piece off the board
+
+At the ending stage of a game when you your pieces at home. To take the pieces off the board the destination is:
+
+X home board : -1 
+
+O home board : 24
+
+## When you can't make a move
+
+If you roll a dice which results in you being unable to make a move run:
+
+```
+python play.py -skip
+```
+
 ## AI move
 
-If you would like to let the AI make a move
+If you would like to let the AI make what it thinks the best move is given a roll:
 
 ```
 python play.py -ai (roll)
@@ -145,15 +173,12 @@ If you rolled a 3 4 you would run:
 python play.py -ai 3 4
 ```
 
-Running this automatically updates the board with the move the AI chose.
+Running this automatically updates the board with the move the AI chose. 
+
+**Note**
+ - If you roll a double you **do not** need to input 4 dice numbers. The AI will automatically make 4 moves if a double is rolled.
+ - If you roll a dice that you know the AI cant make a move on. Still input this roll and the AI will recognise it cannot make a move.
 
 # AI
 
-The AI played 100000 games against itself to learn a model capable of playing a good game of backgammon. The AI used a reinforcement learning algorithm to train the network.
-
-
-
-
-
-
-
+The AI played 100,000 games against itself to learn a model capable of playing a good game of backgammon. The AI used a reinforcement learning algorithm to train the network.
