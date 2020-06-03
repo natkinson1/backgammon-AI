@@ -149,7 +149,7 @@ Running this automatically updates the board with the move the AI chose.
 
 # AI
 
-The AI played 100000 games against itself to learn a model capable of playing a good game of backgammon. The AI used the TD(\[ \lambda \]) reinforcement learning algorithm to train the network.
+The AI played 100000 games against itself to learn a model capable of playing a good game of backgammon. The AI used a reinforcement learning algorithm to train the network.
 
 
 
