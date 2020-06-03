@@ -1,6 +1,6 @@
 # backgammon-AI
 
-In this repository, an application has been made so you can play against yourself or a friend or an AI.
+In this repository, an application has been made so you can play against yourself or a friend or an AI on the command line.
 
 # Prerequisites
 
