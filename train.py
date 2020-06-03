@@ -51,7 +51,7 @@ def main():
     fig, ax = plt.subplots()
     
     ax.plot(losses)
-    
+
     plt.savefig('losses.png')
     plt.show()
 

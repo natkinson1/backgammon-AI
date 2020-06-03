@@ -13,15 +13,14 @@ import pickle
 parser = argparse.ArgumentParser(description="Play Backgammon")
 
 parser.add_argument('-begin',
-                    dest='begin', 
-                    type=bool, 
-                    default=False,
+                    dest='begin',
+                    action='store_true',
                     help='Start the game')
-parser.add_argument('-colour',
+parser.add_argument('-starting_player',
                     dest='colour',
-                    type=int,
-                    default=0, 
-                    help='Define which player starts first')
+                    type=str,
+                    default='X', 
+                    help='Define which player starts first (Either X or O)')
 parser.add_argument('-ai',
                     dest='ai',
                     type=int,
@@ -35,15 +34,16 @@ parser.add_argument('-human',
                     help='Define what move the opponent has done.')
 parser.add_argument('-skip',
                     dest='skip',
-                    type=bool,
-                    default=False,
-                    help='Parse if the human player cannot go.')
+                    action='store_true',
+                    help='Parse if a human player cannot go.')
 
 args = parser.parse_args()
 
-trained_model = torch.load('./better_model.pth')
+trained_model = torch.load('./model.pth')
 
 player = {0 : 'Red', 1 : 'Black'}
+pieces = {0 : 'X', 1 : 'O'}
+opp_pieces = {'X' : 0, 'O' : 1}
 
 env = gym.make('gym_backgammon:backgammon-v0')
 
@@ -68,12 +68,13 @@ def start_game():
     
     agent_colour, roll, state = env.reset()
     
-    while args.colour != agent_colour:
+    while opp_pieces[args.colour] != agent_colour:
     
         agent_colour, roll, state = env.reset()
-
+    
+    print()
     env.render()
-    print('{} player to start.'.format(player[agent_colour]))
+    print('{} player to start.'.format(pieces[agent_colour]))
     
     save_state = env.game.save_state()
     
@@ -87,16 +88,18 @@ def ai_move():
     env.current_agent = agent_colour
     
     #load the agent in the environment
-    network = torch.load('./better_model.pth')
+    network = torch.load('./model.pth')
     agent = utils.TD_BG_Agent(env, agent_colour, network)
     
     
-    #choose the best action, then take action
+    #sort the roll depending on whos turn it is.
     roll = np.array(args.ai)
+    roll = -roll if agent_colour == 1 else roll
     
-    action_set = env.get_valid_actions(tuple(-roll))
+    action_set = env.get_valid_actions(tuple(roll))
     
     if len(action_set) == 0:
+        print()
         print('You can not make a move given your roll!')
         print()
         env.render()
@@ -109,17 +112,23 @@ def ai_move():
         
     else:
         action = agent.best_action(tuple(-roll))
-        next_state, _, _, _ = env.step(action)
+        next_state, _, terminal, _ = env.step(action)
         
-        print('probability AI is going to win: {}'.format(agent.network(torch.Tensor(next_state))[0]))
+        if terminal:
+            print()
+            print('AI has won!')
+        else:
+            print()
+            print('Estimated probability AI is going to win: {}'.format(agent.network(torch.Tensor(next_state))[0]))
 
         #observe action
         print()
-        print('Action chosen: {}'.format(action))
+        print('AI chose action: {}'.format(action))
         print()
         env.render()
 
         next_agent_colour = env.get_opponent_agent()
+        print('{} player to move.'.format(pieces[next_agent_colour]))
         
         save_state = env.game.save_state()
 
@@ -137,6 +146,7 @@ def human_move():
     #play the move that the human chose.
     action = args.human
     
+    #For the case when you want to move pieces from the bar onto the board.
     for i in range(len(action)):
         try:
             action[i] = int(action[i])
@@ -144,18 +154,26 @@ def human_move():
             pass
     
     action = tuple(map(tuple, np.array(action, dtype=object).reshape(-1,2)))
-    print(action)
     
-    next_state, _, _, _ = env.step(action)
+    try:
+        next_state, _, terminal, _ = env.step(action)
+    except AssertionError:
+        raise ValueError('Action {} is invalid. (You are moving the ({}) pieces.)'.format(action, pieces[agent_colour]))
     
-    env.render()
     print()
-    
-    next_agent_colour = env.get_opponent_agent()
-    
-    save_state = env.game.save_state()
+    env.render()
 
-    save(save_state, next_agent_colour)
+    if terminal:
+        print('{} player won!'.format(pieces[agent_colour]))
+    else:
+    
+        next_agent_colour = env.get_opponent_agent()
+        
+        print('{} player to move.'.format(pieces[next_agent_colour]))
+
+        save_state = env.game.save_state()
+
+        save(save_state, next_agent_colour)
     
     
 if __name__ == '__main__':
@@ -165,11 +183,19 @@ if __name__ == '__main__':
     elif args.ai is not None:
         ai_move()
     elif args.skip:
-        state = None
+        
+        state, agent_colour = load()
+        env.game.restore_state(state)
+        env.current_agent = agent_colour
+        
         next_agent_colour = env.get_opponent_agent()
+        print()
+        print('{} player has skipped their go.'.format(pieces[agent_colour]))
+        print()
+        env.render()
+        print('{} player to move.'.format(pieces[next_agent_colour]))
         save(state, next_agent_colour, only_agent_colour=True)
     else:
         human_move()
 
-    
     

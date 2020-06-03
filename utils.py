@@ -147,7 +147,7 @@ def train(agent_white, agent_black, env, n_episodes=1, max_time_steps=3000):
                     reward = -1
                     
                 loss = agent.update(current_prob, future_prob, reward)
-                losses.append(i)
+                losses.append(loss / i)
 
                 agent_wins[winner] += 1
 
