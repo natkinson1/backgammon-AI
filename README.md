@@ -67,7 +67,7 @@ python play -human (source) (destination)
 
 *source* : The number representing where the piece is on the board.
 
-*destination* : The number representing where you want that piece to move too.
+*destination* : The number representing where you want that piece to move to.
 
 ### Example
 
@@ -129,7 +129,7 @@ There is no contraint on the number of pieces I can move in 1 turn.
 
 ## Moving a piece which has been taken.
 
-To move a piece which is on the bar after being taken we denote the source to be *bar*.
+To move a piece which is on the bar after being taken, we denote the source to be *bar*.
 
 ### Example
 
@@ -141,11 +141,25 @@ python play.py -human bar 23 bar 20
 
 ## Moving a piece off the board
 
-At the ending stage of a game when you your pieces at home. To take the pieces off the board the destination is:
+At the ending stage of a game when all your pieces are home. To take the pieces off the board the destination is:
 
 X home board : -1 
 
 O home board : 24
+
+### Example
+
+If you are player X and rolled a 6 and 4:
+
+```
+python play.py -human 5 -1 3 -1
+```
+
+If you are player O and rolled a 6 and 4:
+
+```
+python play.py -human 18 24 20 24
+```
 
 ## When you can't make a move
 
