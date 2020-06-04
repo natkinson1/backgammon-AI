@@ -141,7 +141,7 @@ python play.py -human bar 23 bar 20
 
 ## Moving a piece off the board
 
-At the ending stage of a game when all your pieces are home. To take the pieces off the board the destination is:
+At the ending stage of a game when all your pieces are home, to take the pieces off the board the destination is:
 
 X home board : -1 
 
@@ -163,7 +163,7 @@ python play.py -human 18 24 20 24
 
 ## When you can't make a move
 
-If you roll a dice which results in you being unable to make a move run:
+If you roll a dice which results in you being unable to make a move run (not needed if it is the AI's turn):
 
 ```
 python play.py -skip
