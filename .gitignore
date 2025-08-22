@@ -1,0 +1,7 @@
+*.ipynb
+*.exe
+*.png
+*.pickle
+*.spec
+/build
+/dist

@@ -48,6 +48,7 @@ class TD_BG_Agent:
         
         '''Choose best action'''
         
+        alpha = 0.01
         actions = list(self.env.get_valid_actions(roll))
         
         values = []
@@ -62,18 +63,17 @@ class TD_BG_Agent:
             #figure this out with
             val = self.network(torch.Tensor(next_state))
             
-            values.append(val)
+            values.append(val.detach().numpy())
             
             #Go back to where you currently are.
             self.env.game.restore_state(current_state)
         
-        #This has been changed...
         idx = int(np.argmax(values)) if self.player == 0 else int(np.argmin(values))
         
         return actions[idx]
     
     
-    def update(self, current_prob, future_prob, reward):
+    def update(self, current_prob, future_prob, reward, learning_rate):
         
         self.network.zero_grad()
         current_prob.backward()
@@ -85,7 +85,7 @@ class TD_BG_Agent:
             for i, weights in enumerate(self.network.parameters()):
                 
                 self.elig_traces[i] = self.gamma * self.lamda * self.elig_traces[i] + weights.grad
-                new_weights = weights + self.learning_rate * delta_t * self.elig_traces[i]
+                new_weights = weights + learning_rate * delta_t * self.elig_traces[i]
 
                 weights.copy_(new_weights)
         
@@ -97,13 +97,14 @@ def train(agent_white, agent_black, env, n_episodes=1, max_time_steps=3000):
     '''Trains two agents which compete against one another to make a
     model really good at backgammon.'''
     
-    losses = []
     agents = {WHITE : agent_white, BLACK : agent_black}
     agent_wins = {WHITE : 0, BLACK : 0}
+    other_agent ={WHITE: BLACK, BLACK : WHITE}
     
     for episode in range(n_episodes):
         
         #Reset the environment, choose randomly who goes first
+        losses = []
         agent_colour, roll, state = env.reset()
         agent = agents[agent_colour]
 
@@ -116,6 +117,7 @@ def train(agent_white, agent_black, env, n_episodes=1, max_time_steps=3000):
 #         if episode % 10000 == 0:
 #             agent_white.learning_rate = agent_white.learning_rate * 0.7
 #             agent_black.learning_rate = agent_black.learning_rate * 0.7
+        learning_rate = 0.1 * np.exp(-1 * episode * 0.00015)
         
         for i in range(max_time_steps):
             
@@ -142,12 +144,13 @@ def train(agent_white, agent_black, env, n_episodes=1, max_time_steps=3000):
             future_prob = agent.network(torch.Tensor(next_state))
             
             if terminal and winner is not None:
-                
-                if winner == 1:
+                reward_multiplier = n_pieces_outside_home(env, other_agent[winner])
+                if winner == BLACK:
                     reward = -1
-                    
-                loss = agent.update(current_prob, future_prob, reward)
-                losses.append(loss / i)
+                    reward_multiplier = reward_multiplier * -1
+                loss = agent.update(current_prob, future_prob, reward + (reward_multiplier * 0.1), learning_rate)
+                loss_step = loss / i
+                losses.append(loss_step.detach().numpy())
 
                 agent_wins[winner] += 1
 
@@ -155,13 +158,14 @@ def train(agent_white, agent_black, env, n_episodes=1, max_time_steps=3000):
                 bwp = 100 - wwp
 
 
-                print('Episode : {} | Winner : {} | Num White Wins : {} | Num of Black Wins : {} | White Win Percentage : {:.2f} | Black Win Percentage : {:.2f}'\
+                print('Episode: {} | Winner: {} | Num White Wins: {} | Num of Black Wins: {} | White Win Percentage: {:.2f} | Black Win Percentage: {:.2f} | Total loss: {:.2f}'\
                  .format(episode, agent.player, agent_wins[WHITE], agent_wins[BLACK],\
-                        wwp, bwp))
+                        wwp, bwp, np.sum(losses)))
                 break
                 
             else:
-                loss = agent.update(current_prob, future_prob, reward)
+                loss = agent.update(current_prob, future_prob, reward, learning_rate)
+                losses.append(loss.detach().numpy())
             
             agent_colour = env.get_opponent_agent()
             agent = agents[agent_colour]
@@ -169,3 +173,25 @@ def train(agent_white, agent_black, env, n_episodes=1, max_time_steps=3000):
             state = next_state
             
     return losses
+
+def n_pieces_outside_home(env, agent_colour):
+
+    board = env.game.board
+
+    if agent_colour == BLACK:
+        outside_pieces = board[6:]
+        assert len(outside_pieces) == 18
+        total = 0
+        for n_pieces, colour in outside_pieces:
+            if colour == BLACK:
+                total += n_pieces
+    
+    if agent_colour == WHITE:
+        outside_pieces = board[:-6]
+        assert len(outside_pieces) == 18
+        total = 0
+        for n_pieces, colour in outside_pieces:
+            if colour == WHITE:
+                total += n_pieces
+    
+    return total

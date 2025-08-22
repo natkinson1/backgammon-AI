@@ -2,13 +2,14 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
 import utils
 import gym
 import warnings
 warnings.filterwarnings('ignore')
 import argparse
 import pickle
+import ast
+from collections import namedtuple
 
 parser = argparse.ArgumentParser(description="Play Backgammon")
 
@@ -36,10 +37,18 @@ parser.add_argument('-skip',
                     dest='skip',
                     action='store_true',
                     help='Parse if a human player cannot go.')
+parser.add_argument('-state',
+                    dest='state',
+                    type=str,
+                    help='The state of the board')
+parser.add_argument('-colour',
+                    dest='agent_colour',
+                    type=str,
+                    help='The colour of the player')
 
 args = parser.parse_args()
 
-trained_model = torch.load('./model.pth')
+trained_model = torch.load('./model_300000_games_05082025.pth', weights_only=False)
 
 player = {0 : 'Red', 1 : 'Black'}
 pieces = {0 : 'X', 1 : 'O'}
@@ -134,6 +143,37 @@ def ai_move():
 
         save(save_state, next_agent_colour)
 
+def ai_move_godot():
+    
+    #get back to the current state:
+    # state, agent_colour = load()
+    BackgammonState = namedtuple('BackgammonState', ['board', 'bar', 'off', 'players_positions'])
+    _, _, _ = env.reset()
+    agent_colour_dict = {"black": 1, "white" : 0}
+    state = ast.literal_eval(args.state)
+    env.game.restore_state(state)
+    # env.current_agent = agent_colour
+    env.current_agent = agent_colour_dict[args.agent_colour]
+    
+    #load the agent in the environment
+    network = torch.load('./model_300000_games_05082025.pth', weights_only=False)
+    agent = utils.TD_BG_Agent(env, agent_colour, network)
+    
+    
+    #sort the roll depending on whos turn it is.
+    roll = np.array(args.ai)
+    roll = -roll if agent_colour == 1 else roll
+    
+    action_set = env.get_valid_actions(tuple(roll))
+    
+    if len(action_set) == 0:
+        return []
+        
+    else:
+        action = agent.best_action(tuple(-roll))
+        
+        return action
+
 def human_move():
     
     '''Play a move'''
@@ -181,7 +221,7 @@ if __name__ == '__main__':
     if args.begin:
         start_game()
     elif args.ai is not None:
-        ai_move()
+        ai_move_godot()
     elif args.skip:
         
         state, agent_colour = load()
