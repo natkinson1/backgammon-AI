@@ -4,7 +4,9 @@ In this repository, an application has been made so you can play against yoursel
 
 # Prerequisites
 
-This implementation assumes that you already have anaconda installed on your system. 
+This implementation uses python3.13.5
+
+Please use a virtual env with packages in requirements.txt
 
 ## gym-backgammon
 
