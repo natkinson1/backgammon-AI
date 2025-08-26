@@ -195,4 +195,12 @@ Running this automatically updates the board with the move the AI chose.
 
 # AI
 
-The AI played 200,000 games against itself to learn a model capable of playing a good game of backgammon. The AI used a reinforcement learning algorithm to train the network.
+The AI played 350,000 games against itself to learn a model capable of playing a good game of backgammon. The AI used a reinforcement learning algorithm to train the network.
+
+This is an overview of the models and how they were trained:
+
+**model.pth** : This was trained on 200,000 games with a learning rate of 0.1. It was also trained on a simple reward function.
+
+**model_205000_games_04082025.pth** - **model_300000_games_05082025.pth** : Trained from the existing previous model and used an updated complex reward function which rewards the agent more when winning more convincingly.
+
+**model_350000_14082025.pth** : This model is an update to the previous model. It is fine tuned by using exponential decay on the learning rate to minimise the loss function. The lowest learning rate used was: 0.1 * exp(-1 * 0.0015 * 50000) + 0.000001
